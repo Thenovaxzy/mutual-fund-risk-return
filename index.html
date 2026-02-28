@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mutual Fund Risk-Return Forecaster</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <!-- Chart.js for visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>📈 Forecaster</h2>
+            </div>
+
+            <div class="config-section">
+                <h3>Configuration</h3>
+
+                <form id="analysis-form">
+                    <div class="form-group">
+                        <label for="tickers">Mutual Fund/ETF Tickers (comma-separated)</label>
+                        <textarea id="tickers" rows="3"
+                            required>VTSAX, FXAIX, PRASX, FCNTX, VUG, VTV, VWELX, DODGX, QQQ, SCHD</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="benchmark">Benchmark Index</label>
+                        <input type="text" id="benchmark" value="^GSPC" required>
+                        <small class="help-text">S&P 500 is ^GSPC</small>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="slider-header">
+                            <label for="years">Historical Data Years</label>
+                            <span id="years-val">5</span>
+                        </div>
+                        <input type="range" id="years" min="1" max="20" value="5">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="risk_free_rate">Risk-Free Rate (%)</label>
+                        <input type="number" id="risk_free_rate" min="0" max="10" step="0.1" value="4.0" required>
+                    </div>
+
+                    <button type="submit" id="analyze-btn">
+                        <span class="btn-text">Run Analysis</span>
+                        <div class="spinner hidden"></div>
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header>
+                <h1>Risk-Return Tradeoff Forecast</h1>
+                <p class="subtitle">Predict the expected return of mutual funds based on their systematic risk (Beta)
+                    using a Linear Regression (CAPM) model.</p>
+            </header>
+
+            <div id="results-container" class="results-grid hidden">
+                <!-- Visuals Section -->
+                <div class="chart-section card glass">
+                    <h3>Linear Regression Prediction (Security Market Line)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="smlChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Stats Section -->
+                <div class="stats-section card glass">
+                    <h3>Regression Statistics (SML)</h3>
+                    <div class="stat-box model-equation">
+                        <span class="label">Regression Equation</span>
+                        <span class="value" id="stat-equation">E(R) = (0.0000 * Beta) + 0.0000</span>
+                    </div>
+                    <div class="stat-metrics">
+                        <div class="stat-item">
+                            <span class="label">Market Risk Premium (Slope)</span>
+                            <span class="value" id="stat-slope">0.00%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="label">Implied Risk-Free Rate (Intercept)</span>
+                            <span class="value" id="stat-intercept">0.00%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="label">R-Squared</span>
+                            <span class="value" id="stat-rsquared">0.0000</span>
+                        </div>
+                    </div>
+                    <p class="stat-note">Note: A high R-squared indicates that Beta explains a large portion of the
+                        variance in returns across these specific funds.</p>
+                </div>
+
+                <!-- Data Table Section -->
+                <div class="table-section card glass">
+                    <h3>Fund Metrics & Predictions</h3>
+                    <div class="table-responsive">
+                        <table id="metrics-table">
+                            <thead>
+                                <tr>
+                                    <th>Fund</th>
+                                    <th>Actual Return</th>
+                                    <th>Volatility</th>
+                                    <th>Beta (Risk)</th>
+                                    <th>Predicted Return</th>
+                                    <th>Alpha (Diff)</th>
+                                    <th>Sharpe Ratio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Insert rows via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Custom Prediction Section -->
+                <div class="custom-prediction-section card glass"
+                    style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 1rem;">
+                    <h3>Interactive Risk Prediction</h3>
+                    <p class="subtitle" style="font-size: 0.95rem; margin-bottom: 0.5rem; max-width: 100%;">Enter a
+                        custom Risk Value (Beta bar) to instantly predict the expected return.</p>
+
+                    <div class="prediction-controls"
+                        style="display: flex; gap: 2rem; align-items: flex-end; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 250px; margin-bottom: 0;">
+                            <div class="slider-header" style="margin-bottom: 0.75rem;">
+                                <label for="custom-beta">Custom Risk Value (Beta Bar)</label>
+                                <span id="custom-beta-val">1.00</span>
+                            </div>
+                            <input type="range" id="custom-beta" min="-1.5" max="3.5" step="0.05" value="1.00">
+                        </div>
+                        <button type="button" id="predict-custom-btn" class="btn-primary"
+                            style="flex: 0 0 auto; width: auto; padding: 0.8rem 2rem; margin-top: 0;">
+                            Predict Profit/Risk
+                        </button>
+                    </div>
+
+                    <div id="prediction-result-area" class="hidden" style="margin-top: 1rem;">
+                        <div class="chart-wrapper" style="height: 120px; width: 100%;">
+                            <canvas id="customPredictionChart"></canvas>
+                        </div>
+                        <p id="custom-prediction-text"
+                            style="text-align: center; font-weight: 700; margin-top: 1rem; font-size: 1.15rem;"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="empty-state">
+                <div class="icon-pulse"></div>
+                <h2>Ready to Initialize</h2>
+                <p>Configure your parameters on the left and click "Run Analysis" to generate the Capital Asset Pricing
+                    Model insights.</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js" defer></script>
+</body>
+
+</html>
